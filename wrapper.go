@@ -2,7 +2,7 @@ package goinsta
 
 import (
 	"errors"
-	"fmt"
+	// "fmt"
 	"net/http"
 	"time"
 )
@@ -77,8 +77,8 @@ func (w *Wrapper) GoInstaWrapper(o *ReqWrapperArgs) ([]byte, http.Header, error)
 		if o.Ignore429() {
 			return o.Body, o.Headers, nil
 		}
-			insta.warnHandler("Too many requests, sleeping for %d seconds", TooManyRequestsTimeout)
-			time.Sleep(TooManyRequestsTimeout)
+		insta.warnHandler("Too many requests, sleeping for %d seconds", TooManyRequestsTimeout)
+		time.Sleep(TooManyRequestsTimeout)
 
 	case errors.Is(o.Error, Err2FARequired):
 		// Attempt auto 2FA login with TOTP code generation
@@ -96,26 +96,27 @@ func (w *Wrapper) GoInstaWrapper(o *ReqWrapperArgs) ([]byte, http.Header, error)
 
 	case errors.Is(o.Error, ErrCheckpointRequired):
 		// Attempt to accecpt cookies using headless browser
-		err := insta.Checkpoint.Process()
-		if err != nil {
-			return o.Body, o.Headers, fmt.Errorf(
-				"failed to automatically process status code 400 'checkpoint_required' with checkpoint url '%s', please report this on github. Error provided: %w",
-				insta.Checkpoint.URL,
-				err,
-			)
-		}
-		insta.infoHandler(
-			fmt.Sprintf("Auto solving of checkpoint with url '%s' seems to have gone successful. This is an experimental feature, please let me know if it works! :)\n",
-				insta.Checkpoint.URL,
-			))
+		panic(o.Error)
+		// err := insta.Checkpoint.Process()
+		// if err != nil {
+		// 	return o.Body, o.Headers, fmt.Errorf(
+		// 		"failed to automatically process status code 400 'checkpoint_required' with checkpoint url '%s', please report this on github. Error provided: %w",
+		// 		insta.Checkpoint.URL,
+		// 		err,
+		// 	)
+		// }
+		// insta.infoHandler(
+		// 	fmt.Sprintf("Auto solving of checkpoint with url '%s' seems to have gone successful. This is an experimental feature, please let me know if it works! :)\n",
+		// 		insta.Checkpoint.URL,
+		// 	))
 
 	case errors.Is(o.Error, ErrCheckpointPassed):
 		// continue without doing anything, retry request
 
 	case errors.Is(o.Error, ErrChallengeRequired):
-		if err := insta.Challenge.Process(); err != nil {
-			return o.Body, o.Headers, fmt.Errorf("failed to process challenge automatically with: %w", err)
-		}
+		// if err := insta.Challenge.Process(); err != nil {
+		panic(o.Error)
+		// }
 	default:
 		// Unhandeled errors should be passed on
 		return o.Body, o.Headers, o.Error
