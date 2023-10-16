@@ -4,13 +4,16 @@ import (
 	"C"
 )
 import (
+	"encoding/json"
+	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	"github.com/Davincible/goinsta/v3"
 )
 
-func login(usernamePtr string, passwordPtr string, totpPtr string) string {
+func login(usernamePtr string, passwordPtr string, totpPtr string, proxy string) string {
 	username := usernamePtr
 	password := passwordPtr
 	totp := totpPtr
@@ -23,22 +26,28 @@ func login(usernamePtr string, passwordPtr string, totpPtr string) string {
 			}
 
 		}()
+		var config goinsta.ConfigFile
+		conf_file, err := os.Open(username)
+		if err == nil {
+			byteValue, _ := ioutil.ReadAll(conf_file)
+			json.Unmarshal(byteValue, &config)
+			insta, _ = goinsta.ImportConfig(config)
+			defer conf_file.Close()
+		}
+		_ = insta.SetProxy(proxy, false, true)
 		insta.Login()
+		insta.Export(username)
 		aa := insta.ExportConfig()
 		return aa.HeaderOptions["Authorization"]
 	}()
 }
 
 func main() {
-	username := os.Args[1]
-	password := os.Args[2]
-	var totp string = ""
-
-	if len(os.Args) == 4 {
-		totp = os.Args[3]
-	} else {
-		totp = ""
-	}
-	headers := login(username, password, totp)
+	var username = flag.String("user", "", "account username")
+	var password = flag.String("pass", "", "account password")
+	var totp = flag.String("totp", "", "account 2FA code")
+	var proxy = flag.String("proxy", "", "proxy URL of account")
+	flag.Parse()
+	headers := login(*username, *password, *totp, *proxy)
 	fmt.Println(headers)
 }
