@@ -5,19 +5,18 @@ import (
 )
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/Davincible/goinsta/v3"
 )
 
-func login(usernamePtr string, passwordPtr string, totpPtr string, proxy string) string {
+func login(usernamePtr string, passwordPtr string, totpPtr string, proxy string, savePathPtr string) string {
 	username := usernamePtr
 	password := passwordPtr
 	totp := totpPtr
-
 	insta := goinsta.New(username, password, totp)
 	return func() string {
 		defer func() {
@@ -27,7 +26,9 @@ func login(usernamePtr string, passwordPtr string, totpPtr string, proxy string)
 
 		}()
 		var config goinsta.ConfigFile
-		conf_file, err := os.Open(username)
+		err := os.MkdirAll(savePathPtr, os.ModePerm)
+		savePath := filepath.Join(savePathPtr, username)
+		conf_file, err := os.Open(savePath)
 		if err == nil {
 			byteValue, _ := ioutil.ReadAll(conf_file)
 			json.Unmarshal(byteValue, &config)
@@ -36,18 +37,13 @@ func login(usernamePtr string, passwordPtr string, totpPtr string, proxy string)
 		}
 		_ = insta.SetProxy(proxy, false, true)
 		insta.Login()
-		insta.Export(username)
+		insta.Export(savePath)
 		aa := insta.ExportConfig()
 		return aa.HeaderOptions["Authorization"]
 	}()
 }
 
 func main() {
-	var username = flag.String("user", "", "account username")
-	var password = flag.String("pass", "", "account password")
-	var totp = flag.String("totp", "", "account 2FA code")
-	var proxy = flag.String("proxy", "", "proxy URL of account")
-	flag.Parse()
-	headers := login(*username, *password, *totp, *proxy)
-	fmt.Println(headers)
+	cookie := login("dnubsxshh", "V11U7@4D1f#J", "CSLMLT6CRMGGLI2HHCVOOQTNNGSB2GOI", "http://geonode_kfLaf4FKJX:8a2c106c-80a3-4ff0-8d96-83a92fff8c74@premium-residential.geonode.com:10004", "exports")
+	fmt.Println(cookie)
 }
