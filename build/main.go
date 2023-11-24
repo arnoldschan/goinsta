@@ -5,6 +5,7 @@ import (
 )
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -44,6 +45,12 @@ func login(usernamePtr string, passwordPtr string, totpPtr string, proxy string,
 }
 
 func main() {
-	cookie := login("dnubsxshh", "V11U7@4D1f#J", "CSLMLT6CRMGGLI2HHCVOOQTNNGSB2GOI", "http://geonode_kfLaf4FKJX:8a2c106c-80a3-4ff0-8d96-83a92fff8c74@premium-residential.geonode.com:10004", "exports")
-	fmt.Println(cookie)
+	var username = flag.String("user", "", "account username")
+	var password = flag.String("pass", "", "account password")
+	var totp = flag.String("totp", "", "account 2FA code")
+	var proxy = flag.String("proxy", "", "proxy URL of account")
+	var path = flag.String("path", "", "proxy URL of account")
+	flag.Parse()
+	headers := login(*username, *password, *totp, *proxy, *path)
+	fmt.Println(headers)
 }
