@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chromedp/cdproto/fetch"
+
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/cdproto/network"
@@ -61,6 +63,10 @@ func printButtons(insta *Instagram) chromedp.Action {
 						fmt.Sprintf("Found button on challenge page: %s\n",
 							p.Children[0].NodeValue,
 						))
+					// Pass "This was me" page
+					if strings.Contains(p.Children[0].NodeValue, "This Was Me") {
+						chromedp.MouseClickNode(p.Children[0]).Do(ctx)
+					}
 				}
 			}
 			return nil
@@ -109,7 +115,7 @@ func (insta *Instagram) acceptPrivacyCookies(url string) error {
 }
 
 func (insta *Instagram) openChallenge(url string) error {
-	fname := fmt.Sprintf("challenge-screenshot-%d.png", time.Now().Unix())
+	fname := fmt.Sprintf("challenge-screenshot-%s-%d.png", insta.user, time.Now().Unix())
 
 	success := false
 
@@ -122,8 +128,10 @@ func (insta *Instagram) openChallenge(url string) error {
 
 				// Wait for a few seconds, and screenshot the page after
 				chromedp.Sleep(time.Second * 5),
-				printButtons(insta),
+				printButtons(insta), // here gonna click "This was me" button
+				chromedp.Sleep(time.Second * 5),
 				takeScreenshot(fname),
+				chromedp.Navigate("https://www.instagram.com"),
 
 				// Wait until page gets redirected to instagram home page
 				waitForInstagram(&success),
@@ -193,9 +201,12 @@ func (insta *Instagram) runHeadless(options *headlessOptions) error {
 		chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.UserAgent(userAgent),
 	)
-
+	auth := ""
 	if insta.proxy != "" {
-		opts = append(opts, chromedp.ProxyServer(insta.proxy))
+		auth = strings.Split(insta.proxy, "@")[0]
+		proxy := strings.Split(insta.proxy, "@")[1]
+		http := strings.SplitAfter(insta.proxy, "//")[0]
+		opts = append(opts, chromedp.ProxyServer(http+proxy))
 	}
 	if insta.proxyInsecure {
 		opts = append(opts, chromedp.Flag("ignore-certificate-errors", true))
@@ -228,6 +239,7 @@ func (insta *Instagram) runHeadless(options *headlessOptions) error {
 	// if err != nil {
 	// 	return err
 	// }
+	var html string
 
 	default_actions := chromedp.Tasks{
 		// Set custom device type
@@ -239,6 +251,10 @@ func (insta *Instagram) runHeadless(options *headlessOptions) error {
 			// 		Angle: 0,
 			// 	}),
 			emulation.SetTouchEmulationEnabled(true),
+			// for proxy auth handling
+			fetch.Enable().WithHandleAuthRequests(true),
+			chromedp.Navigate("http://api.ipify.org?format=json"),
+			chromedp.OuterHTML("html", &html),
 		},
 
 		// Set custom cookie
@@ -266,6 +282,36 @@ func (insta *Instagram) runHeadless(options *headlessOptions) error {
 				},
 			),
 		),
+	}
+	if insta.proxy != "" {
+		chromedp.ListenTarget(ctx, func(ev interface{}) {
+			go func() {
+				switch ev := ev.(type) {
+				case *fetch.EventAuthRequired:
+					c := chromedp.FromContext(ctx)
+					execCtx := cdp.WithExecutor(ctx, c.Target)
+
+					resp := &fetch.AuthChallengeResponse{
+						Response: fetch.AuthChallengeResponseResponseProvideCredentials,
+						Username: strings.Split(strings.Split(auth, "//")[1], ":")[0],
+						Password: strings.Split(strings.Split(auth, "//")[1], ":")[1],
+					}
+
+					err := fetch.ContinueWithAuth(ev.RequestID, resp).Do(execCtx)
+					if err != nil {
+						fmt.Println(err)
+					}
+
+				case *fetch.EventRequestPaused:
+					c := chromedp.FromContext(ctx)
+					execCtx := cdp.WithExecutor(ctx, c.Target)
+					err := fetch.ContinueRequest(ev.RequestID).Do(execCtx)
+					if err != nil {
+						fmt.Println(err)
+					}
+				}
+			}()
+		})
 	}
 
 	err := chromedp.Run(ctx, append(default_actions, options.tasks))

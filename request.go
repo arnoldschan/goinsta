@@ -249,6 +249,9 @@ func (insta *Instagram) sendRequest(o *reqOptions) (body []byte, h http.Header, 
 
 	// Extract error from request body, if present
 	err = insta.isError(resp.StatusCode, body, resp.Status, o.Endpoint)
+	if (err != nil) && ((err == ErrBadPassword) || err == ErrBadLogin) {
+		return nil, nil, err
+	}
 
 	// Decode gzip encoded responses
 	encoding := resp.Header.Get("Content-Encoding")
@@ -382,6 +385,8 @@ func (insta *Instagram) isError(code int, body []byte, status, endpoint string) 
 			return ErrLoginRequired
 		case "bad_password":
 			return ErrBadPassword
+		case "The username you entered doesn't appear to belong to an account. Please check your username and try again.":
+			return ErrBadLogin
 
 		case "Sorry, this media has been deleted":
 			return ErrMediaDeleted

@@ -268,6 +268,7 @@ var (
 	RespErr2FA = "two_factor_required"
 
 	// Account & Login Errors
+	ErrBadLogin        = errors.New("login is incorrect")
 	ErrBadPassword     = errors.New("password is incorrect")
 	ErrTooManyRequests = errors.New("too many requests, please wait a few minutes before you try again")
 	ErrLoggedOut       = errors.New("you have been logged out, please log back in")
