@@ -239,7 +239,6 @@ func (insta *Instagram) runHeadless(options *headlessOptions) error {
 	// if err != nil {
 	// 	return err
 	// }
-	var html string
 
 	default_actions := chromedp.Tasks{
 		// Set custom device type
@@ -251,10 +250,6 @@ func (insta *Instagram) runHeadless(options *headlessOptions) error {
 			// 		Angle: 0,
 			// 	}),
 			emulation.SetTouchEmulationEnabled(true),
-			// for proxy auth handling
-			fetch.Enable().WithHandleAuthRequests(true),
-			chromedp.Navigate("http://api.ipify.org?format=json"),
-			chromedp.OuterHTML("html", &html),
 		},
 
 		// Set custom cookie
@@ -313,7 +308,16 @@ func (insta *Instagram) runHeadless(options *headlessOptions) error {
 			}()
 		})
 	}
+	// for proxy auth handling
+	tasks := append(default_actions, options.tasks)
+	var html string
+	if insta.proxy != "" {
+		proxyTasks := chromedp.Tasks{fetch.Enable().WithHandleAuthRequests(true),
+			chromedp.Navigate("http://api.ipify.org?format=json"),
+			chromedp.OuterHTML("html", &html)}
+		tasks = append(proxyTasks, tasks)
 
-	err := chromedp.Run(ctx, append(default_actions, options.tasks))
+	}
+	err := chromedp.Run(ctx, tasks)
 	return err
 }

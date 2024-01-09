@@ -134,10 +134,16 @@ type Instagram struct {
 	privacyCalled *utilities.ABool
 	// Keep track of whether an attempt has been made to accept the cookies
 	privacyRequested *utilities.ABool
+	// for autologin without browser
+	passBrowserEmulation bool
 }
 
 func defaultHandler(args ...interface{}) {
 	fmt.Println(args...)
+}
+
+func (insta *Instagram) SetPassBrowserEmulation(f bool) {
+	insta.passBrowserEmulation = f
 }
 
 func (insta *Instagram) SetInfoHandler(f func(...interface{})) {
