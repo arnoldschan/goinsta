@@ -121,7 +121,7 @@ func (insta *Instagram) openChallenge(url string) error {
 
 	err := insta.runHeadless(
 		&headlessOptions{
-			timeout:     300,
+			timeout:     60,
 			showBrowser: true,
 			tasks: chromedp.Tasks{
 				chromedp.Navigate(url),

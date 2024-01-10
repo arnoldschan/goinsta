@@ -35,11 +35,12 @@ func login(usernamePtr string, passwordPtr string, totpPtr string, proxy string,
 		if err == nil {
 			byteValue, _ := ioutil.ReadAll(conf_file)
 			json.Unmarshal(byteValue, &config)
+			fmt.Println("Config:", config)
 			insta, _ = goinsta.ImportConfig(config)
 			defer conf_file.Close()
 		}
 		if proxy != "" {
-			_ = insta.SetProxy(proxy, true, true)
+			_ = insta.SetProxy(proxy, true, false)
 		}
 		err = insta.Login()
 		if err != nil {
