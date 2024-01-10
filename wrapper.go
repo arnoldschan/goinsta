@@ -98,7 +98,7 @@ func (w *Wrapper) GoInstaWrapper(o *ReqWrapperArgs) ([]byte, http.Header, error)
 
 	case errors.Is(o.Error, ErrCheckpointRequired):
 		// Attempt to accecpt cookies using headless browser
-		if insta.passBrowserEmulation {
+		if insta.passBrowserEmulation == true {
 			panic(o.Error)
 		}
 		err := insta.Checkpoint.Process()
@@ -118,7 +118,7 @@ func (w *Wrapper) GoInstaWrapper(o *ReqWrapperArgs) ([]byte, http.Header, error)
 		// continue without doing anything, retry request
 
 	case errors.Is(o.Error, ErrChallengeRequired):
-		if insta.passBrowserEmulation {
+		if insta.passBrowserEmulation == true {
 			panic(o.Error)
 		}
 		if err := insta.Challenge.Process(); err != nil {
